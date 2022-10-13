@@ -181,7 +181,7 @@ class PDQN:
             lr_actor: float = 0.001,
             lr_actor_param: float = 0.001,
             initial_random_steps: int = 128,
-            seed: int = 1
+            seed: int = 2
     ):
         def seed_torch(seed: int):
             torch.manual_seed(seed)
@@ -226,7 +226,7 @@ class PDQN:
         self.epsilon_final = epsilon_final
         self.epsilon_steps = epsilon_steps
 
-        self.clip_grad = 40.
+        self.clip_grad = 10.
         self.batch_size = batch_size
         self.gamma = gamma
         self.memory_size = memory_size
