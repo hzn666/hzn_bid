@@ -2,7 +2,7 @@ import argparse
 import os
 import gym
 from gym.spaces import Tuple, Discrete, Box
-
+from collections import deque
 import numpy as np
 import pandas as pd
 from paddpg import PADDPG
@@ -12,11 +12,24 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
+def stack_frames(stacked_frames, frame, is_new_episode=False):
+    if is_new_episode:
+        stacked_frames.append(frame)
+        stacked_frames.append(frame)
+        stacked_frames.append(frame)
+        stacked_frames.append(frame)
+    else:
+        stacked_frames.append(frame)
+
+    state = np.stack(stacked_frames, axis=0).reshape(-1)
+    return state, stacked_frames
+
+
 def choose_init_base_bid(config, budget_para):
     base_bid_path = os.path.join('../lin/result/ipinyou/{}/normal/test'.format(config['campaign_id']),
                                  'test_bid_log.csv')
     if not os.path.exists(base_bid_path):
-        raise FileNotFoundError('Run LIN first before you train drlb')
+        raise FileNotFoundError('Run LIN first before train PAB')
     data = pd.read_csv(base_bid_path)
     base_bid = data[data['budget_para'] == budget_para].iloc[0]['base_bid']
     avg_pctr = data[data['budget_para'] == budget_para].iloc[0]['average_pctr']
@@ -34,31 +47,38 @@ def get_budget(data):
 
 
 def reward_func(reward_type, lin_result, rl_result):
-    fab_clks = rl_result['win_clks']
+    clks = rl_result['win_clks']
     hb_clks = lin_result['win_clks']
-    fab_cost = rl_result['spend']
+    cost = rl_result['spend']
     hb_cost = lin_result['spend']
-    fab_pctrs = rl_result['win_pctr']
+    pctrs = rl_result['win_pctr']
 
-    if fab_clks >= hb_clks and fab_cost < hb_cost:
-        r = 5
-    elif fab_clks >= hb_clks and fab_cost >= hb_cost:
-        r = 1
-    elif fab_clks < hb_clks and fab_cost >= hb_cost:
-        r = -5
-    else:
-        r = -2.5
-
+    clk_result = clks / hb_clks if hb_clks else 1
+    cost_result = cost / hb_cost if hb_cost else 1
+    a = 1
+    b = 1
     if reward_type == 'op':
-        return r / 1000
-    elif reward_type == 'nop':
-        return r
-    elif reward_type == 'nop_2.0':
-        return fab_clks / 1000
-    elif reward_type == 'pctr':
-        return fab_pctrs
-    else:
-        return fab_clks
+        return a * clk_result - b * cost_result
+
+    # if clks >= hb_clks and cost < hb_cost:
+    #     r = 5
+    # elif clks >= hb_clks and cost >= hb_cost:
+    #     r = 1
+    # elif clks < hb_clks and cost >= hb_cost:
+    #     r = -5
+    # else:
+    #     r = -2.5
+
+    # if reward_type == 'op':
+    #     return r / 1000
+    # elif reward_type == 'nop':
+    #     return r
+    # elif reward_type == 'nop_2.0':
+    #     return clks / 1000
+    # elif reward_type == 'pctr':
+    #     return pctrs
+    # else:
+    #     return clks
 
 
 def bid(data, budget, **cfg):
@@ -166,27 +186,37 @@ def rtb(data, budget_para, RL, config, train=True):
         day_data = data[data['day'].isin([day])]
         day_budget = [budget[day_index]]
 
+        stacked_frames = deque([np.zeros(6) for _ in range(4)], maxlen=4)
+
         for slot in range(0, time_fraction):
             if slot == 0:
-                state = [1, 0, 0, 0]
+                frame = [avg_pctr, 0, 0, 0, 0, 0]
+                state, stacked_frames = stack_frames(stacked_frames, frame, is_new_episode=True)
             else:
-                left_slot_ratio = (time_fraction - 1 - slot) / (time_fraction - 1)
-
-                state = [
-                    (day_budget[-1] / day_budget[0]) / left_slot_ratio if left_slot_ratio else day_budget[-1] /
-                                                                                               day_budget[0],
-                    day_spend[-1] / day_budget[0],
-                    day_win_clks[-1] / day_win_imps[-1] if day_win_imps[-1] else 0,
-                    day_win_imps[-1] / day_bid_imps[-1] if day_bid_imps[-1] else 0
-                ]
+                # left_slot_ratio = (time_fraction - 1 - slot) / (time_fraction - 1)
+                # last_slot_data = day_data[day_data['time_fraction'] == slot - 1]
+                # last_slot_avg_pctr = last_slot_data['pctr'].sum() / len(last_slot_data) if len(last_slot_data) else 0
+                # frame = [
+                #     last_slot_avg_pctr,
+                #     (day_budget[-1] / day_budget[0]) / left_slot_ratio if left_slot_ratio else day_budget[-1] /
+                #                                                                                day_budget[0],
+                #     day_spend[-1] / day_budget[0],
+                #     day_action[-1],
+                #     day_win_clks[-1] / day_win_imps[-1] if day_win_imps[-1] else 0,
+                #     day_win_imps[-1] / day_bid_imps[-1] if day_bid_imps[-1] else 0
+                # ]
+                # state = stack_frames(stacked_frames, frame)
+                state = next_state
 
             act, act_param, all_actions, all_action_parameters = RL.select_action(state)
-            day_action.append((act, act_param))
 
             slot_lin_bid_para = base_bid / avg_pctr
+
             if act:
+                day_action.append(act_param[0])
                 slot_rl_bid_para = slot_lin_bid_para / (1 + act_param[0])
             else:
+                day_action.append(-act_param[0])
                 slot_rl_bid_para = slot_lin_bid_para / (1 - act_param[0])
 
             slot_data = day_data[day_data['time_fraction'] == slot]
@@ -214,13 +244,17 @@ def rtb(data, budget_para, RL, config, train=True):
                 done = 0
 
             left_slot_ratio = (time_fraction - 2 - slot) / (time_fraction - 1)
-            next_state = [
+            slot_avg_pctr = slot_data['pctr'].sum() / len(slot_data) if len(slot_data) else 0
+            next_frame = [
+                slot_avg_pctr,
                 (day_budget[-1] / day_budget[0]) / left_slot_ratio if left_slot_ratio else day_budget[-1] /
                                                                                            day_budget[0],
                 day_spend[-1] / day_budget[0],
+                day_action[-1],
                 day_win_clks[-1] / day_win_imps[-1] if day_win_imps[-1] else 0,
                 day_win_imps[-1] / day_bid_imps[-1] if day_bid_imps[-1] else 0
             ]
+            next_state, stacked_frames = stack_frames(stacked_frames, next_frame)
 
             if train:
                 RL.store(slot_reward, next_state, done)
@@ -368,7 +402,7 @@ if __name__ == '__main__':
     parser.add_argument('--campaign_id', type=str, default='1458')
     parser.add_argument('--result_path', type=str, default='result')
     parser.add_argument('--time_fraction', type=int, default=96)
-    parser.add_argument('--feature_num', type=int, default=4)
+    parser.add_argument('--feature_num', type=int, default=24)
     parser.add_argument('--action_num', type=int, default=2)
     parser.add_argument('--action_parameters_num', type=int, default=2)
     parser.add_argument('--budget_para', nargs='+', default=[2])
@@ -394,14 +428,14 @@ if __name__ == '__main__':
     obs_space = Box(
         low=0.,
         high=1.,
-        shape=(4,),
+        shape=(config['feature_num'],),
         dtype=np.float32
     )
 
     action_space = Tuple((
         Discrete(2),
-        Box(-0.99, 0.99, (1,), np.float32),
-        Box(-0.99, 0.99, (1,), np.float32)
+        Box(0, 1, (1,), np.float32),
+        Box(0, 1, (1,), np.float32)
     ))
 
     for i in budget_para_list:

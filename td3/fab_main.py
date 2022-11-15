@@ -184,6 +184,7 @@ def rtb(data, budget_para, RL, config, train=True):
             slot_data = day_data[day_data['time_fraction'] == slot]
             slot_lin_bid_para = base_bid / avg_pctr
             slot_rl_bid_para = slot_lin_bid_para / (1 + slot_action)
+            # print(slot_action, slot_rl_bid_para)
             slot_lin_result = bid(slot_data, day_budget[-1], slot_bid_para=slot_lin_bid_para)
             slot_rl_result = bid(slot_data, day_budget[-1], slot_bid_para=slot_rl_bid_para)
 
@@ -364,8 +365,8 @@ if __name__ == '__main__':
     parser.add_argument('--time_fraction', type=int, default=96)
     parser.add_argument('--feature_num', type=int, default=4)
     parser.add_argument('--action_num', type=int, default=1)
-    parser.add_argument('--budget_para', nargs='+', default=[2])
-    parser.add_argument('--train_epochs', type=int, default=3000)
+    parser.add_argument('--budget_para', nargs='+', default=[16])
+    parser.add_argument('--train_epochs', type=int, default=500)
     parser.add_argument('--memory_size', type=int, default=100000)
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--save_bid_action', type=bool, default=False)

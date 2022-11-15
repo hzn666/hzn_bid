@@ -377,7 +377,7 @@ def main(budget_para, RL, config):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_path', type=str, default='../data/ipinyou')
-    parser.add_argument('--campaign_id', type=str, default='1458')
+    parser.add_argument('--campaign_id', type=str, default='3476')
     parser.add_argument('--result_path', type=str, default='result')
     parser.add_argument('--time_fraction', type=int, default=96)
     parser.add_argument('--e_greedy', type=float, default=0.9)
