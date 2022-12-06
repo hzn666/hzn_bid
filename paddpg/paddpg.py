@@ -127,7 +127,7 @@ class Actor(nn.Module):
             x = F.leaky_relu(layer(x), negative_slope)
 
         action = self.action_output_layer(x)
-        action_params = self.action_parameters_output_layer(x)
+        action_params = self.action_parameters_output_layer(x).tanh()
 
         return action, action_params
 
@@ -287,7 +287,6 @@ class PADDPG:
             all_actions, all_action_parameters = self.actor.forward(x)
             all_actions = all_actions.detach().cpu().data.numpy()
             all_action_parameters = all_action_parameters.detach().cpu().data.numpy()
-            # all_action_parameters = np.clip(all_action_parameters, 0., 1.)
 
             if np.random.uniform() < self.epsilon:
                 all_actions = np.random.uniform(size=all_actions.shape)
@@ -296,6 +295,7 @@ class PADDPG:
             offset = np.array([self.action_parameter_sizes[i] for i in range(action)], dtype=int).sum()
             all_action_parameters[offset:offset + self.action_parameter_sizes[action]] += \
                 self.noise.sample()[offset:offset + self.action_parameter_sizes[action]]
+            all_action_parameters = np.clip(all_action_parameters, 0., 0.99)
             action_parameters = all_action_parameters[offset:offset + self.action_parameter_sizes[action]]
 
         self.transition = [state, list(np.concatenate((all_actions, all_action_parameters)))]

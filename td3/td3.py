@@ -335,6 +335,9 @@ class TD3:
             )
 
             self.transition = [state, selected_action]
+        selected_action = np.clip(
+            selected_action, -0.99, 0.99
+        )
         self.total_step += 1
         self.actor.train()
         return selected_action

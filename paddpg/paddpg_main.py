@@ -53,32 +53,32 @@ def reward_func(reward_type, lin_result, rl_result):
     hb_cost = lin_result['spend']
     pctrs = rl_result['win_pctr']
 
-    clk_result = clks / hb_clks if hb_clks else 1
-    cost_result = cost / hb_cost if hb_cost else 1
-    a = 1
-    b = 1
-    if reward_type == 'op':
-        return a * clk_result - b * cost_result
-
-    # if clks >= hb_clks and cost < hb_cost:
-    #     r = 5
-    # elif clks >= hb_clks and cost >= hb_cost:
-    #     r = 1
-    # elif clks < hb_clks and cost >= hb_cost:
-    #     r = -5
-    # else:
-    #     r = -2.5
-
+    # clk_result = clks / hb_clks if hb_clks else 1
+    # cost_result = cost / hb_cost if hb_cost else 1
+    # a = 1
+    # b = 1
     # if reward_type == 'op':
-    #     return r / 1000
-    # elif reward_type == 'nop':
-    #     return r
-    # elif reward_type == 'nop_2.0':
-    #     return clks / 1000
-    # elif reward_type == 'pctr':
-    #     return pctrs
-    # else:
-    #     return clks
+    #     return a * clk_result - b * cost_result
+
+    if clks >= hb_clks and cost < hb_cost:
+        r = 5
+    elif clks >= hb_clks and cost >= hb_cost:
+        r = 1
+    elif clks < hb_clks and cost >= hb_cost:
+        r = -5
+    else:
+        r = -2.5
+
+    if reward_type == 'op':
+        return r / 1000
+    elif reward_type == 'nop':
+        return r
+    elif reward_type == 'nop_2.0':
+        return clks / 1000
+    elif reward_type == 'pctr':
+        return pctrs
+    else:
+        return clks
 
 
 def bid(data, budget, **cfg):
