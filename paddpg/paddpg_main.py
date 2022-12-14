@@ -418,8 +418,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
     config = vars(args)
 
-    str_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-    config['result_path'] = config['result_path'] + '-' + str_time
+    str_time = time.strftime('%Y-%m-%d %H-%M-%S', time.localtime())
+    config['result_path'] = 'result-camp={}-seed={}-{}'.format(config['campaign_id'], config['seed'], str_time)
     if not os.path.exists(config['result_path']):
         os.makedirs(config['result_path'])
 
@@ -444,6 +444,8 @@ if __name__ == '__main__':
 
     for i in budget_para_list:
         RL = PADDPG(
+            i,
+            config['campaign_id'],
             obs_space=obs_space,
             action_space=action_space,
             batch_size=config['batch_size'],

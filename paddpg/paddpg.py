@@ -175,6 +175,8 @@ class Critic(nn.Module):
 class PADDPG:
     def __init__(
             self,
+            budget,
+            camp,
             obs_space,
             action_space,
             epsilon_initial: float = 1.0,
@@ -270,7 +272,7 @@ class PADDPG:
         self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=self.lr_a, betas=(0.95, 0.999))
         self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=self.lr_c, betas=(0.95, 0.999))
 
-        self.writer = SummaryWriter('tensorboard' + '-' + time)
+        self.writer = SummaryWriter('tensorboard-camp={}-budget={}-seed={}-{}/'.format(camp, budget, seed, time))
 
         # transition to store in memory
         self.transition = list()
