@@ -1,5 +1,6 @@
 import argparse
 import os
+import time
 import gym
 from gym.spaces import Tuple, Discrete, Box
 from collections import deque
@@ -412,10 +413,13 @@ if __name__ == '__main__':
     parser.add_argument('--save_bid_action', type=bool, default=False)
     parser.add_argument('--reward_type', type=str, default='op', help='op, nop_2.0, clk')
     parser.add_argument('--device', type=str, default='cuda')
+    parser.add_argument('--seed', type=int, default=1)
 
     args = parser.parse_args()
     config = vars(args)
 
+    str_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
+    config['result_path'] = config['result_path'] + '-' + str_time
     if not os.path.exists(config['result_path']):
         os.makedirs(config['result_path'])
 
@@ -444,6 +448,8 @@ if __name__ == '__main__':
             action_space=action_space,
             batch_size=config['batch_size'],
             memory_size=config['memory_size'],
+            seed=config['seed'],
+            time=str_time
         )
 
         print('当前预算条件{}'.format(i))

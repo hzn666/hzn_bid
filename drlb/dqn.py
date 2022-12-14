@@ -103,7 +103,8 @@ class DQN(object):
             max_epsilon: float = 0.9,
             min_epsilon: float = 0.1,
             gamma: float = 1.,
-            seed: int = 1
+            seed: int = 1,
+            time: str = ''
     ):
 
         def seed_torch(seed: int):
@@ -157,7 +158,7 @@ class DQN(object):
         self.is_test = False
 
         # tensorboard
-        self.writer = SummaryWriter('tensorboard/tensorboard-camp={}-budget={}-seed={}/'.format(camp, seed, budget))
+        self.writer = SummaryWriter('tensorboard-camp={}-budget={}-seed={}-{}/'.format(camp, budget, seed, time))
         self.log_cnt = 0
         self.log_cnt_test = 0
 

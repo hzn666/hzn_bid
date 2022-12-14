@@ -254,8 +254,18 @@ class TD3:
             target_policy_noise: float = 0.2,
             target_policy_noise_clip: float = 0.5,
             initial_random_steps: int = 200,
-            policy_update_freq: int = 3
+            policy_update_freq: int = 3,
+            seed: int = 1
     ):
+        def seed_torch(seed: int):
+            torch.manual_seed(seed)
+            if torch.backends.cudnn.enabled:
+                torch.backends.cudnn.benchmark = False
+                torch.backends.cudnn.deterministic = True
+
+        np.random.seed(seed)
+        seed_torch(seed)
+
         """Initialize."""
         self.memory = PrioritizedReplayBuffer(obs_dim, memory_size, batch_size)
         self.batch_size = batch_size

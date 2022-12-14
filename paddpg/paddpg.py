@@ -190,7 +190,8 @@ class PADDPG:
             lr_a: float = 1e-3,
             lr_c: float = 1e-3,
             initial_random_steps: int = 128,
-            seed: int = 1
+            seed: int = 1,
+            time: str = ''
     ):
         def seed_torch(seed: int):
             torch.manual_seed(seed)
@@ -269,7 +270,7 @@ class PADDPG:
         self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=self.lr_a, betas=(0.95, 0.999))
         self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=self.lr_c, betas=(0.95, 0.999))
 
-        self.writer = SummaryWriter('tensorboard')
+        self.writer = SummaryWriter('tensorboard' + '-' + time)
 
         # transition to store in memory
         self.transition = list()

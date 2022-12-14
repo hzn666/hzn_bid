@@ -372,6 +372,7 @@ if __name__ == '__main__':
     parser.add_argument('--save_bid_action', type=bool, default=False)
     parser.add_argument('--reward_type', type=str, default='op', help='op, nop_2.0, clk')
     parser.add_argument('--device', type=str, default='cuda')
+    parser.add_argument('--seed', type=int, default=1)
 
     args = parser.parse_args()
     config = vars(args)
@@ -392,7 +393,8 @@ if __name__ == '__main__':
             config['action_num'],
             config['memory_size'],
             config['batch_size'],
-            initial_random_steps=200
+            initial_random_steps=200,
+            seed=config['seed']
         )
 
         print('当前预算条件{}'.format(i))

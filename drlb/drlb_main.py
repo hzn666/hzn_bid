@@ -1,6 +1,6 @@
 import argparse
 import os
-
+import time
 import numpy as np
 import pandas as pd
 from dqn import DQN
@@ -295,9 +295,10 @@ def rtb(data, budget_para, RL, config, train=True):
 
 
 def main(budget_para, RL, config):
-    record_path = os.path.join(config['result_path'], config['campaign_id'])
-    if not os.path.exists(record_path):
-        os.makedirs(record_path)
+    record_path = config['result_path']
+    # record_path = os.path.join(config['result_path'], config['campaign_id'])
+    # if not os.path.exists(record_path):
+    #     os.makedirs(record_path)
 
     train_data = pd.read_csv(os.path.join(config['data_path'], config['campaign_id'], 'train.bid.lin.csv'))
     test_data = pd.read_csv(os.path.join(config['data_path'], config['campaign_id'], 'test.bid.lin.csv'))
@@ -377,7 +378,7 @@ def main(budget_para, RL, config):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_path', type=str, default='../data/ipinyou')
-    parser.add_argument('--campaign_id', type=str, default='3476')
+    parser.add_argument('--campaign_id', type=str, default='1458')
     parser.add_argument('--result_path', type=str, default='result')
     parser.add_argument('--time_fraction', type=int, default=96)
     parser.add_argument('--e_greedy', type=float, default=0.9)
@@ -391,10 +392,13 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--save_bid_action', type=bool, default=False)
     parser.add_argument('--device', type=str, default='cuda')
+    parser.add_argument('--seed', type=int, default='10')
 
     args = parser.parse_args()
     config = vars(args)
 
+    str_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
+    config['result_path'] = 'result-camp={}-seed={}-{}/'.format(config['campaign_id'], config['seed'], str_time)
     if not os.path.exists(config['result_path']):
         os.makedirs(config['result_path'])
 
@@ -416,7 +420,8 @@ if __name__ == '__main__':
             config['memory_size'],
             config['batch_size'],
             config['replace_target_iter'],
-            seed=1
+            seed=config['seed'],
+            time=str_time
         )
 
         print('当前预算条件{}'.format(i))
